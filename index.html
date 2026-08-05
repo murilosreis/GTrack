@@ -1509,18 +1509,15 @@ function getVeiculosNoPatio(){
 function ehPernoite(r){
   return toLocalDateStr(r.horaEntrada) !== todayStr();
 }
-// Carregamento e Descarga têm sequências de chegada independentes uma da outra.
-// A numeração é global (baseada em todo o histórico de registros), pra que o número
-// de um veículo seja sempre o mesmo, tanto no pátio quanto depois no relatório.
-function numerarPorOperacao(){
-  const todos = [...records].sort((a,b) => a.horaEntrada - b.horaEntrada);
-  const posPorId = {};
-  let seqCarregar = 0, seqDescarga = 0;
-  todos.forEach(r => {
-    if(r.operacao === 'Descarga') posPorId[r.id] = ++seqDescarga;
-    else posPorId[r.id] = ++seqCarregar;
-  });
-  return posPorId;
+// Carregamento e Descarga têm sequências de chegada independentes uma da outra,
+// e essa numeração zera todo dia — cada dia começa em 1 de novo, por operação.
+function ordemDoRegistro(r){
+  const dia = toLocalDateStr(r.horaEntrada);
+  const doDia = records
+    .filter(rec => rec.operacao === r.operacao && toLocalDateStr(rec.horaEntrada) === dia)
+    .sort((a,b) => a.horaEntrada - b.horaEntrada);
+  const idx = doDia.findIndex(rec => rec.id === r.id);
+  return idx === -1 ? '-' : idx + 1;
 }
 function renderPatio(){
   const abertos = getVeiculosNoPatio();
@@ -1530,9 +1527,6 @@ function renderPatio(){
     el.innerHTML = '<div class="empty">Nenhum veículo no pátio no momento.</div>';
     return;
   }
-  // Carregamento e Descarga têm numeração de chegada própria, cada um na sua sequência
-  const posPorId = numerarPorOperacao();
-
   el.innerHTML = abertos.map(r => {
     const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
     const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
@@ -1541,7 +1535,7 @@ function renderPatio(){
     return `
     <div class="${rowClass}" data-tempo-id="${r.id}" data-entrada="${r.horaEntrada}">
       <div class="v-order ativo">
-        <div class="v-order-num">${posPorId[r.id]}</div>
+        <div class="v-order-num">${ordemDoRegistro(r)}</div>
       </div>
       <div class="v-body">
         ${renderPlate(r.placa)}
@@ -1593,11 +1587,10 @@ function renderSaidaRowHTML(r){
   const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
   const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
   const rowClass = r.operacao === 'Descarga' ? 'ledger-row descarga-row' : 'ledger-row';
-  const posPorId = numerarPorOperacao();
   return `
     <div class="${rowClass}">
       <div class="v-order saiu">
-        <div class="v-order-num">${posPorId[r.id] || '-'}</div>
+        <div class="v-order-num">${ordemDoRegistro(r)}</div>
       </div>
       <div class="v-body">
         ${renderPlate(r.placa)}
@@ -1677,7 +1670,7 @@ function tituloRelatorio(){
 function operacaoTexto(r){
   return (r.operacao === 'Descarga' && r.produto) ? `${r.operacao} - ${r.produto}` : r.operacao;
 }
-function tabelaUnificadaHTML(titulo, lista, posPorId){
+function tabelaUnificadaHTML(titulo, lista){
   const semRegistro = `<h4 style="font-family:Arial,sans-serif;font-size:0.92rem;margin:10px 0 6px;color:#444;">${titulo}</h4><p style="font-family:Arial,sans-serif;font-size:0.85rem;color:#666;margin:0 0 14px;">Nenhum registro encontrado.</p>`;
   if(lista.length === 0) return semRegistro;
   const linhas = lista.map(r => {
@@ -1687,7 +1680,7 @@ function tabelaUnificadaHTML(titulo, lista, posPorId){
     const situacao = noPatioAgora ? (ehPernoite(r) ? '⚠ No pátio (Pernoite)' : 'No pátio') : 'Saiu';
     return `
     <tr>
-      <td>${posPorId[r.id]}</td>
+      <td>${ordemDoRegistro(r)}</td>
       <td>${placaExibicao(r.placa)}</td>
       <td>${r.motorista}</td>
       <td>${r.produto || '-'}</td>
@@ -1718,7 +1711,6 @@ function tabelaUnificadaHTML(titulo, lista, posPorId){
     </table>`;
 }
 function montarHTMLRelatorio(){
-  const posPorId = numerarPorOperacao();
   const noPatio = getVeiculosNoPatio();
   const saidas = montarLinhasRelatorio();
   const todos = [...noPatio, ...saidas].sort((a,b) => a.horaEntrada - b.horaEntrada);
@@ -1729,8 +1721,8 @@ function montarHTMLRelatorio(){
   return `
     <h2 style="margin-bottom:4px;font-family:Arial,sans-serif;">${tituloRelatorio()}</h2>
     <p style="color:#666;margin-top:0;font-size:0.85rem;font-family:Arial,sans-serif;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
-    ${tabelaUnificadaHTML('Carregamentos', carregamentos, posPorId)}
-    ${tabelaUnificadaHTML('Descargas', descargas, posPorId)}
+    ${tabelaUnificadaHTML('Carregamentos', carregamentos)}
+    ${tabelaUnificadaHTML('Descargas', descargas)}
   `;
 }
 function abrirPreviewRelatorio(){
@@ -1747,7 +1739,6 @@ function baixarPDF(){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    const posPorId = numerarPorOperacao();
     const noPatio = getVeiculosNoPatio();
     const lista = montarLinhasRelatorio();
 
@@ -1791,7 +1782,7 @@ function baixarPDF(){
     const montarLinha = r => {
       const noPatioAgora = r.status === 'entrada';
       return [
-        String(posPorId[r.id]),
+        String(ordemDoRegistro(r)),
         placaExibicao(r.placa),
         r.motorista.length > 11 ? r.motorista.slice(0,10)+'.' : r.motorista,
         (r.produto || '-').slice(0,9),
