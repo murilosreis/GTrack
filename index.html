@@ -263,51 +263,65 @@
     0%{border-color:var(--amber);} 100%{border-color:var(--hairline);}
   }
 
-  /* ---------- Ledger rows: sem moldura, compacto — placa + nome numa linha, dados numa linha abaixo ---------- */
+  /* ---------- Cartão de veículo — modelo com caixa de ordem à esquerda ---------- */
   .ledger-row{
-    border:none; border-bottom:1px solid var(--hairline);
-    padding:13px 4px;
+    display:flex; gap:14px; align-items:flex-start;
+    border:1px solid var(--hairline-strong); border-left:4px solid var(--blue);
+    border-radius:14px; background:var(--panel-2);
+    padding:16px; margin-bottom:12px; overflow:hidden;
   }
-  .ledger-row:last-child{border-bottom:none; padding-bottom:2px;}
-  .ledger-row:first-child{padding-top:2px;}
+  .ledger-row:last-child{margin-bottom:0;}
+  .ledger-row.descarga-row{
+    border-left-color:var(--purple);
+    background:rgba(160,116,232,0.055);
+  }
 
-  .v-line1{display:flex; align-items:center; gap:10px;}
-  .v-marker{position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center; width:20px; height:20px;}
-  .pos-num{
-    width:20px;height:20px;border-radius:50%;
-    background:rgba(226,171,78,0.16); border:1.5px solid var(--amber-dim);
-    display:flex;align-items:center;justify-content:center;
-    font-family:var(--font-mono); font-weight:800; font-size:0.62rem; color:var(--amber);
-    animation:pulse 1.8s ease-in-out infinite;
+  .v-order{
+    flex-shrink:0; width:58px; height:58px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--hairline-strong); border-radius:11px;
+    background:rgba(255,255,255,0.03);
   }
-  .status-dot{width:8px;height:8px;border-radius:50%; flex-shrink:0;}
-  .status-dot.pulse{background:var(--amber); box-shadow:0 0 10px 2px var(--amber-glow); animation:pulse 1.8s ease-in-out infinite;}
-  .status-dot.static-teal{background:var(--teal); box-shadow:0 0 6px 1px var(--teal-glow);}
-  @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.4;}}
-  .v-name{font-size:1.05rem; font-weight:800; color:var(--text); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .v-order-num{font-family:var(--font-mono); font-weight:800; font-size:1.55rem; color:var(--text); line-height:1;}
+  .v-order.ativo{border-color:var(--amber-dim); background:rgba(226,171,78,0.08);}
+  .v-order.ativo .v-order-num{color:var(--amber); animation:piscarNum 1.8s ease-in-out infinite;}
+  @keyframes piscarNum{0%,100%{opacity:1;} 50%{opacity:0.35;}}
+  .v-order.saiu{opacity:0.7;}
+
+  .v-body{flex:1; min-width:0;}
+  .v-top{display:flex; align-items:flex-start; gap:10px; justify-content:space-between;}
   .v-actions{display:flex; gap:6px; flex-shrink:0;}
+  .v-name{
+    font-size:1.05rem; font-weight:800; color:var(--text);
+    margin-top:9px; white-space:normal; overflow-wrap:break-word; line-height:1.25;
+  }
+
+  .v-warning{
+    display:flex; align-items:center; gap:8px;
+    background:rgba(226,171,78,0.12); border:1px solid var(--amber-dim); color:var(--amber);
+    border-radius:10px; padding:9px 12px; font-size:0.78rem; font-weight:700; margin-top:10px;
+  }
 
   .v-line2{
-    font-size:0.74rem; color:var(--muted-dim); margin-top:8px;
-    padding-left:30px; font-family:var(--font-mono); overflow-wrap:break-word;
+    display:flex; flex-wrap:wrap; align-items:baseline; row-gap:4px;
+    font-size:0.74rem; color:var(--muted-dim); margin-top:10px;
+    font-family:var(--font-mono);
   }
+  .v-line2 .v-seg{white-space:nowrap;}
+  .v-line2 .v-seg:not(:first-child)::before{content:'·'; margin:0 6px; color:var(--muted-dim);}
   .v-line2 .tempo{color:var(--amber); font-weight:700;}
   .v-line2 .total{color:var(--teal); font-weight:700;}
 
   .v-user{
-    display:flex; align-items:center; justify-content:space-between; gap:8px;
-    font-size:0.65rem; color:var(--muted-dim); margin-top:4px; padding-left:30px; font-family:var(--font-mono);
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px;
+    font-size:0.65rem; color:var(--muted-dim); margin-top:10px; font-family:var(--font-mono);
   }
   .row-obs{
-    font-size:0.72rem; color:var(--muted-dim); margin-top:6px; padding-left:30px; font-family:var(--font-body);
+    font-size:0.72rem; color:var(--muted-dim); margin-top:8px; font-family:var(--font-body);
   }
   .produto-tag{
     display:inline-block; font-size:0.65rem; color:var(--muted); background:rgba(255,255,255,0.05);
     border:1px solid var(--hairline); padding:2px 8px; border-radius:20px; font-family:var(--font-body);
     margin-left:6px; vertical-align:1px;
-  }
-  .ledger-row.descarga-row{
-    background:rgba(160,116,232,0.06);
   }
   .menu-btn{font-size:1rem; font-weight:800; line-height:1;}
   .row-actions-sheet{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
@@ -1523,20 +1537,26 @@ function renderPatio(){
     const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
     const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
     const rowClass = r.operacao === 'Descarga' ? 'ledger-row descarga-row' : 'ledger-row';
+    const warningHtml = ehPernoite(r) ? `<div class="v-warning">⚠ Desde ${formatData(r.horaEntrada)} — virou o dia</div>` : '';
     return `
     <div class="${rowClass}" data-tempo-id="${r.id}" data-entrada="${r.horaEntrada}">
-      <div class="v-line1">
-        <div class="v-marker"><span class="pos-num" title="Ordem de chegada (${r.operacao}) · no pátio agora">${posPorId[r.id]}</span></div>
-        <div class="plate-sm-wrap">${renderPlate(r.placa)}</div>
+      <div class="v-order ativo">
+        <div class="v-order-num">${posPorId[r.id]}</div>
+      </div>
+      <div class="v-body">
+        ${renderPlate(r.placa)}
         <div class="v-name">${r.motorista}</div>
-        <div class="v-actions">
-          <button class="btn btn-saida btn-sm" onclick="pedirSaida('${r.id}')">Saída</button>
-          <button class="icon-btn menu-btn" title="Mais ações" onclick="abrirAcoesLancamento('${r.id}', true)">⋮</button>
+        ${warningHtml}
+        <div class="v-line2"><span class="v-seg">${opHtml}</span><span class="v-seg">entrou ${formatHora(r.horaEntrada)}</span><span class="v-seg"><span class="tempo">${formatTempoVivo(Date.now()-r.horaEntrada)}</span></span></div>
+        ${obsHtml}
+        <div class="v-user">
+          <span>${formatData(r.horaEntrada)} · ${r.usuarioLancamento || '-'}</span>
+          <div class="v-actions">
+            <button class="btn btn-saida btn-sm" onclick="pedirSaida('${r.id}')">Saída</button>
+            <button class="icon-btn menu-btn" title="Mais ações" onclick="abrirAcoesLancamento('${r.id}', true)">⋮</button>
+          </div>
         </div>
       </div>
-      <div class="v-line2">${opHtml} · entrou ${formatHora(r.horaEntrada)} · <span class="tempo">${formatTempoVivo(Date.now()-r.horaEntrada)}</span>${ehPernoite(r) ? ' <span class="overnight-badge" title="Entrou em um dia anterior">⚠ Pernoite</span>' : ''}</div>
-      <div class="v-user"><span>${formatData(r.horaEntrada)}</span><span>${r.usuarioLancamento || '-'}</span></div>
-      ${obsHtml}
     </div>`;
   }).join('');
 }
@@ -1573,19 +1593,24 @@ function renderSaidaRowHTML(r){
   const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
   const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
   const rowClass = r.operacao === 'Descarga' ? 'ledger-row descarga-row' : 'ledger-row';
+  const posPorId = numerarPorOperacao();
   return `
     <div class="${rowClass}">
-      <div class="v-line1">
-        <div class="v-marker"><span class="status-dot static-teal" title="Saiu"></span></div>
-        <div class="plate-sm-wrap">${renderPlate(r.placa)}</div>
+      <div class="v-order saiu">
+        <div class="v-order-num">${posPorId[r.id] || '-'}</div>
+      </div>
+      <div class="v-body">
+        ${renderPlate(r.placa)}
         <div class="v-name">${r.motorista}</div>
-        <div class="v-actions">
-          <button class="icon-btn menu-btn" title="Mais ações" onclick="abrirAcoesLancamento('${r.id}', false)">⋮</button>
+        <div class="v-line2"><span class="v-seg">${opHtml}</span><span class="v-seg">${formatHora(r.horaEntrada)} → ${formatHora(r.horaSaida)}</span><span class="v-seg"><span class="total">${formatDuracao(r.horaSaida - r.horaEntrada)}</span></span></div>
+        ${obsHtml}
+        <div class="v-user">
+          <span>${formatData(r.horaEntrada)} · ${r.usuarioLancamento || '-'}</span>
+          <div class="v-actions">
+            <button class="icon-btn menu-btn" title="Mais ações" onclick="abrirAcoesLancamento('${r.id}', false)">⋮</button>
+          </div>
         </div>
       </div>
-      <div class="v-line2">${opHtml} · ${formatHora(r.horaEntrada)} → ${formatHora(r.horaSaida)} · <span class="total">${formatDuracao(r.horaSaida - r.horaEntrada)}</span></div>
-      <div class="v-user"><span>${formatData(r.horaEntrada)}</span><span>${r.usuarioLancamento || '-'}</span></div>
-      ${obsHtml}
     </div>`;
 }
 
