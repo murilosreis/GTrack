@@ -180,11 +180,9 @@
     padding:2px 8px; border-radius:20px;
   }
 
-  /* Painel "Veículos no Pátio" com destaque, por ser a área de acompanhamento ao vivo */
+  /* Painel "Veículos no Pátio" com destaque sutil, por ser a área de acompanhamento ao vivo */
   .panel-active{
-    background:linear-gradient(180deg, rgba(226,171,78,0.09), var(--panel-2) 55%);
-    border:1px solid var(--amber-dim);
-    box-shadow:0 0 0 1px rgba(226,171,78,0.08), 0 12px 26px rgba(226,171,78,0.06);
+    background:linear-gradient(180deg, rgba(226,171,78,0.06), var(--panel-2) 55%);
   }
   .panel-active .panel-head h2{
     display:flex; align-items:center; gap:7px;
@@ -268,38 +266,53 @@
     0%{border-color:var(--amber);} 100%{border-color:var(--hairline);}
   }
 
-  /* ---------- Ledger rows ---------- */
+  /* ---------- Ledger rows: cartão limpo, com pares rótulo/valor bem alinhados ---------- */
   .ledger-row{
-    display:flex; align-items:center; gap:12px;
-    border:1px solid var(--hairline); border-radius:11px;
-    padding:12px 13px; margin-bottom:9px;
+    border:1px solid var(--hairline); border-radius:12px;
+    padding:14px 15px; margin-bottom:10px;
     background:rgba(255,255,255,0.015);
-    transition:border-color .15s ease, background .15s ease;
+    transition:background .15s ease, border-color .15s ease;
   }
   .ledger-row:last-child{margin-bottom:0;}
-  .ledger-row:hover{border-color:var(--hairline-strong); background:rgba(255,255,255,0.03);}
-  .ledger-row.active-row{
-    border-left:3px solid var(--amber);
-    background:rgba(226,171,78,0.055);
-    border-top-color:rgba(226,171,78,0.18); border-right-color:rgba(226,171,78,0.18); border-bottom-color:rgba(226,171,78,0.18);
-  }
-  .ledger-row.active-row:hover{background:rgba(226,171,78,0.09);}
+  .ledger-row:hover{background:rgba(255,255,255,0.03); border-color:var(--hairline-strong);}
+  .ledger-row.active-row{border-color:var(--amber-dim); background:rgba(226,171,78,0.05);}
+  .ledger-row.active-row:hover{background:rgba(226,171,78,0.08);}
+
+  .row-top{display:flex; align-items:flex-start; gap:12px;}
+  .marker-col{display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; padding-top:2px;}
   .status-dot-wrap{flex-shrink:0; width:10px; display:flex; justify-content:center;}
   .pulse{width:8px;height:8px;border-radius:50%; background:var(--amber); box-shadow:0 0 10px 2px var(--amber-glow); animation:pulse 1.8s ease-in-out infinite;}
   @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.4;}}
-  .row-info{flex:1; min-width:0;}
-  .row-name-main{font-size:0.88rem; font-weight:700; color:var(--text);}
-  .row-name{font-size:0.82rem; color:var(--muted); margin-left:8px;}
-  .row-meta{font-size:0.72rem; color:var(--muted-dim); margin-top:5px; font-family:var(--font-mono); overflow-wrap:anywhere;}
-  .row-meta .tempo{color:var(--amber); font-weight:600;}
-  .row-meta-top{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px;}
-  .row-date{font-family:var(--font-mono); font-size:0.68rem; color:var(--muted-dim); flex-shrink:0;}
-  .row-meta-bottom{font-size:0.72rem; color:var(--muted-dim); margin-top:4px; font-family:var(--font-mono); overflow-wrap:anywhere;}
-  .row-meta-bottom .tempo{color:var(--amber); font-weight:600;}
-  .row-meta-bottom .total{color:var(--teal); font-weight:600;}
-  .row-actions-col{display:flex; flex-direction:column; align-items:flex-end; gap:5px; flex-shrink:0;}
-  .row-actions-buttons{display:flex; gap:6px;}
-  .row-date-under{font-family:var(--font-mono); font-size:0.65rem; color:var(--muted-dim);}
+  .row-head{flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:2px;}
+  .row-name-main{font-size:0.94rem; font-weight:700; color:var(--text);}
+
+  .row-detail-list{margin-top:14px; padding-top:12px; border-top:1px solid var(--hairline);}
+  .rd-row{
+    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
+    padding:5px 0;
+  }
+  .rd-label{
+    font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--muted-dim); font-weight:700; flex-shrink:0;
+  }
+  .rd-value{
+    font-size:0.85rem; color:var(--text); font-family:var(--font-mono);
+    text-align:right; overflow-wrap:break-word;
+  }
+  .rd-value .tempo{color:var(--amber); font-weight:700;}
+  .rd-value .total{color:var(--teal); font-weight:700;}
+
+  .row-obs{
+    font-size:0.75rem; color:var(--muted-dim); margin-top:10px;
+    padding-top:10px; border-top:1px dashed var(--hairline); font-family:var(--font-body);
+  }
+
+  .row-actions-row{display:flex; justify-content:flex-end; gap:8px; margin-top:14px;}
+  .produto-tag{
+    display:inline-block; font-size:0.65rem; color:var(--muted); background:rgba(255,255,255,0.05);
+    border:1px solid var(--hairline); padding:2px 8px; border-radius:20px; font-family:var(--font-body);
+    margin-left:6px; vertical-align:1px;
+  }
 
   /* ---------- Placa (visual realista) ---------- */
   .plate-col{display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0;}
@@ -336,6 +349,10 @@
   }
   .plate-fallback{ padding:4px 6px; font-family:var(--font-mono); font-weight:700; font-size:0.75rem; text-align:center; }
   .row-actions{display:flex; gap:6px; flex-shrink:0;}
+  /* Linhas simples (Usuários / Log) continuam no formato flex de antes */
+  .ledger-row.simple-row{display:flex; align-items:center; gap:12px;}
+  .ledger-row.simple-row .row-info{flex:1; min-width:0;}
+  .ledger-row.simple-row .row-meta{font-size:0.72rem; color:var(--muted-dim); margin-top:5px; font-family:var(--font-mono); overflow-wrap:break-word;}
   .icon-btn{
     width:28px;height:28px;border-radius:7px;border:1px solid var(--hairline-strong);background:transparent;
     cursor:pointer; font-size:0.78rem; display:flex;align-items:center;justify-content:center; color:var(--muted);
@@ -507,6 +524,11 @@
       <div class="op-toggle">
         <button type="button" class="op-btn carregar" id="opBtnCarregar" onclick="selecionarOperacao('Carregar')">Carregar</button>
         <button type="button" class="op-btn descarregar" id="opBtnDescarregar" onclick="selecionarOperacao('Descarga')">Descarga</button>
+      </div>
+
+      <div class="field full" id="produtoField" style="display:none;">
+        <label for="fProduto">Produto a descarregar</label>
+        <input id="fProduto" placeholder="Produto">
       </div>
 
       <button class="btn btn-primary" onclick="registrarEntrada()">Registrar Entrada</button>
@@ -958,7 +980,7 @@ function renderUsuarios(){
     return;
   }
   el.innerHTML = users.map(u => `
-    <div class="ledger-row">
+    <div class="ledger-row simple-row">
       <div class="status-dot-wrap"><span class="dot dot-neutral"></span></div>
       <div class="row-info">
         <span class="row-name" style="margin-left:0;color:var(--text);font-weight:600;font-size:0.88rem;">${u.nome}</span>
@@ -1005,7 +1027,7 @@ function renderLog(){
   }
 
   el.innerHTML = filtrado.map(l => `
-    <div class="ledger-row">
+    <div class="ledger-row simple-row">
       <div class="status-dot-wrap"><span class="dot dot-neutral"></span></div>
       <div class="row-info">
         <span class="row-name" style="margin-left:0;color:var(--text);font-weight:600;font-size:0.85rem;">${l.tipo}</span>
@@ -1029,6 +1051,7 @@ function selecionarOperacao(op){
 function atualizarBotoesOperacao(){
   document.getElementById('opBtnCarregar').classList.toggle('active', operacaoSelecionada === 'Carregar');
   document.getElementById('opBtnDescarregar').classList.toggle('active', operacaoSelecionada === 'Descarga');
+  document.getElementById('produtoField').style.display = (operacaoSelecionada === 'Descarga') ? 'block' : 'none';
 }
 
 // ---------- Utilitários de data (evitar bug de fuso horário) ----------
@@ -1145,9 +1168,11 @@ function registrarEntrada(){
   const placaEl = document.getElementById('fPlaca');
   const motoristaEl = document.getElementById('fMotorista');
   const obsEl = document.getElementById('fObs');
+  const produtoEl = document.getElementById('fProduto');
 
   const placa = placaFormat(placaEl.value);
   const motorista = titleCase(motoristaEl.value);
+  const produto = produtoEl.value.trim();
 
   if(!motorista){ alert('Informe o nome do motorista.'); motoristaEl.focus(); return; }
   if(!placa){ alert('Informe a placa.'); placaEl.focus(); return; }
@@ -1156,12 +1181,18 @@ function registrarEntrada(){
     placaEl.focus();
     return;
   }
+  if(operacaoSelecionada === 'Descarga' && !produto){
+    alert('Informe o produto que será descarregado.');
+    produtoEl.focus();
+    return;
+  }
 
   const record = {
     id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
     placa,
     motorista,
     operacao: operacaoSelecionada,
+    produto: operacaoSelecionada === 'Descarga' ? produto : '',
     obs: obsEl.value.trim(),
     status: 'entrada',
     horaEntrada: Date.now(),
@@ -1176,6 +1207,7 @@ function registrarEntrada(){
   motoristaEl.value = '';
   motoristaEl.setAttribute('readonly','');
   obsEl.value = '';
+  produtoEl.value = '';
   // Mantém a operação selecionada (prático para registrar várias entradas seguidas do mesmo tipo)
 
   render();
@@ -1302,30 +1334,54 @@ function renderPatio(){
     el.innerHTML = '<div class="empty">Nenhum veículo no pátio no momento.</div>';
     return;
   }
-  el.innerHTML = abertos.map((r,i) => `
+  el.innerHTML = abertos.map((r,i) => {
+    const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
+    const situacaoHtml = `<span class="tempo">${formatTempoVivo(Date.now()-r.horaEntrada)}</span>${ehPernoite(r) ? ' <span class="overnight-badge" title="Entrou em um dia anterior">⚠ Pernoite</span>' : ''}`;
+    const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
+    return `
     <div class="ledger-row active-row" data-tempo-id="${r.id}" data-entrada="${r.horaEntrada}">
-      <div class="pos-badge" title="Ordem de chegada">${i+1}</div>
-      <div class="status-dot-wrap"><span class="pulse"></span></div>
-      ${renderPlateCol(r)}
-      <div class="row-info">
-        <div class="row-name-main">${r.motorista}</div>
-        <div class="row-meta-top">${renderOpBadge(r.operacao)}</div>
-        <div class="row-meta-bottom">entrou ${formatHora(r.horaEntrada)} · <span class="tempo">${formatTempoVivo(Date.now()-r.horaEntrada)}</span>${ehPernoite(r) ? ' <span class="overnight-badge" title="Entrou em um dia anterior">⚠ Pernoite</span>' : ''}</div>
-      </div>
-      <div class="row-actions-col">
-        <div class="row-actions-buttons">
-          <button class="btn btn-saida btn-sm" onclick="pedirSaida('${r.id}')">Saída</button>
-          <button class="icon-btn" title="Editar" onclick="pedirEdicao('${r.id}')">✏️</button>
+      <div class="row-top">
+        <div class="marker-col">
+          <div class="pos-badge" title="Ordem de chegada">${i+1}</div>
+          <div class="status-dot-wrap"><span class="pulse"></span></div>
         </div>
-        <div class="row-date-under">${formatData(r.horaEntrada)}</div>
+        ${renderPlateCol(r)}
+        <div class="row-head">
+          <div class="row-name-main">${r.motorista}</div>
+        </div>
       </div>
-    </div>
-  `).join('');
+      <div class="row-detail-list">
+        <div class="rd-row"><span class="rd-label">Operação</span><span class="rd-value">${opHtml}</span></div>
+        <div class="rd-row"><span class="rd-label">Data</span><span class="rd-value">${formatData(r.horaEntrada)}</span></div>
+        <div class="rd-row"><span class="rd-label">Entrada</span><span class="rd-value">${formatHora(r.horaEntrada)}</span></div>
+        <div class="rd-row"><span class="rd-label">No pátio há</span><span class="rd-value">${situacaoHtml}</span></div>
+      </div>
+      ${obsHtml}
+      <div class="row-actions-row">
+        <button class="btn btn-saida btn-sm" onclick="pedirSaida('${r.id}')">Saída</button>
+        <button class="icon-btn" title="Editar" onclick="pedirEdicao('${r.id}')">✏️</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
+// Usado só pela tela (Histórico) — exige filtro preenchido, senão fica vazio de propósito
 function getHistoricoFiltrado(){
   const busca = document.getElementById('fBusca').value.trim().toLowerCase();
   const dataFiltro = document.getElementById('fData').value;
+
+  return records
+    .filter(r => r.status === 'saida')
+    .filter(r => {
+      if(busca) return r.placa.toLowerCase().includes(busca) || r.motorista.toLowerCase().includes(busca);
+      return toLocalDateStr(r.horaEntrada) === dataFiltro;
+    })
+    .sort((a,b) => b.horaSaida - a.horaSaida);
+}
+// Usado pelo relatório/PDF — se nenhum filtro for preenchido, assume o dia de hoje (nunca fica "vazio" sem motivo)
+function getRelatorioFiltrado(){
+  const busca = document.getElementById('fBusca').value.trim().toLowerCase();
+  const dataFiltro = document.getElementById('fData').value || todayStr();
 
   return records
     .filter(r => r.status === 'saida')
@@ -1343,16 +1399,28 @@ function montarObsTexto(r){
   return partes.length ? ' · ' + partes.join(' · ') : '';
 }
 function renderSaidaRowHTML(r){
+  const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
+  const situacaoHtml = `${formatHora(r.horaSaida)} <span class="total">(${formatDuracao(r.horaSaida - r.horaEntrada)})</span>`;
+  const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
   return `
     <div class="ledger-row">
-      <div class="status-dot-wrap"><span class="dot dot-teal"></span></div>
-      ${renderPlateCol(r)}
-      <div class="row-info">
-        <div class="row-name-main">${r.motorista}</div>
-        <div class="row-meta-top">${renderOpBadge(r.operacao)}<span class="row-date">${formatData(r.horaEntrada)}</span></div>
-        <div class="row-meta-bottom">${formatHora(r.horaEntrada)} → ${formatHora(r.horaSaida)} · <span class="total">${formatDuracao(r.horaSaida - r.horaEntrada)}</span>${montarObsTexto(r)}</div>
+      <div class="row-top">
+        <div class="marker-col">
+          <div class="status-dot-wrap"><span class="dot dot-teal"></span></div>
+        </div>
+        ${renderPlateCol(r)}
+        <div class="row-head">
+          <div class="row-name-main">${r.motorista}</div>
+        </div>
       </div>
-      <div class="row-actions">
+      <div class="row-detail-list">
+        <div class="rd-row"><span class="rd-label">Operação</span><span class="rd-value">${opHtml}</span></div>
+        <div class="rd-row"><span class="rd-label">Data</span><span class="rd-value">${formatData(r.horaEntrada)}</span></div>
+        <div class="rd-row"><span class="rd-label">Entrada</span><span class="rd-value">${formatHora(r.horaEntrada)}</span></div>
+        <div class="rd-row"><span class="rd-label">Saída</span><span class="rd-value">${situacaoHtml}</span></div>
+      </div>
+      ${obsHtml}
+      <div class="row-actions-row">
         <button class="icon-btn" title="Editar" onclick="pedirEdicao('${r.id}')">✏️</button>
         <button class="icon-btn danger" title="Excluir" onclick="pedirExclusao('${r.id}')">🗑️</button>
       </div>
@@ -1417,15 +1485,17 @@ function atualizarRelogio(){
 
 // ---------- Relatório: pré-visualização, impressão e PDF ----------
 function montarLinhasRelatorio(){
-  return getHistoricoFiltrado();
+  return getRelatorioFiltrado();
 }
 function tituloRelatorio(){
   const busca = document.getElementById('fBusca').value.trim();
   if(busca) return `Relatório - busca: "${busca}"`;
-  const dataFiltro = document.getElementById('fData').value;
-  if(!dataFiltro) return 'Relatório de Saídas (nenhum filtro aplicado)';
+  const dataFiltro = document.getElementById('fData').value || todayStr();
   const [y,m,d] = dataFiltro.split('-');
   return `Relatório do dia ${d}/${m}/${y}`;
+}
+function operacaoTexto(r){
+  return (r.operacao === 'Descarga' && r.produto) ? `${r.operacao} - ${r.produto}` : r.operacao;
 }
 function montarHTMLRelatorio(){
   const noPatio = getVeiculosNoPatio();
@@ -1438,7 +1508,7 @@ function montarHTMLRelatorio(){
         <td>${i+1}</td>
         <td>${placaExibicao(r.placa)}</td>
         <td>${r.motorista}</td>
-        <td>${r.operacao}</td>
+        <td>${r.operacao === 'Descarga' && r.produto ? `${r.operacao} - ${r.produto}` : r.operacao}</td>
         <td>${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}</td>
         <td>${formatDuracao(Date.now() - r.horaEntrada)}</td>
         <td>${ehPernoite(r) ? '⚠ Pernoite' : '-'}</td>
@@ -1466,7 +1536,7 @@ function montarHTMLRelatorio(){
     <tr>
       <td>${placaExibicao(r.placa)}</td>
       <td>${r.motorista}</td>
-      <td>${r.operacao}</td>
+      <td>${operacaoTexto(r)}</td>
       <td>${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}</td>
       <td>${formatHora(r.horaSaida)}</td>
       <td>${formatDuracao(r.horaSaida - r.horaEntrada)}</td>
@@ -1546,7 +1616,7 @@ function baixarPDF(){
           String(i+1),
           placaExibicao(r.placa),
           r.motorista.length > 13 ? r.motorista.slice(0,12)+'.' : r.motorista,
-          r.operacao,
+          operacaoTexto(r).slice(0,16),
           `${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}`,
           formatDuracao(Date.now() - r.horaEntrada),
           ehPernoite(r) ? 'Pernoite' : '-'
@@ -1582,7 +1652,7 @@ function baixarPDF(){
         const linha = [
           placaExibicao(r.placa),
           r.motorista.length > 14 ? r.motorista.slice(0,13)+'.' : r.motorista,
-          r.operacao,
+          operacaoTexto(r).slice(0,16),
           `${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}`,
           formatHora(r.horaSaida),
           formatDuracao(r.horaSaida - r.horaEntrada),
