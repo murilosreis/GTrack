@@ -8,6 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg-deep:#0c0f17;
@@ -116,6 +118,7 @@
     padding:6px 11px; border-radius:20px; cursor:pointer; margin-top:6px;
   }
   .logout-btn:hover{border-color:var(--danger); color:var(--danger);}
+  .conn-indicator{font-size:0.62rem; color:var(--muted-dim); margin-top:6px; font-family:var(--font-mono);}
 
   /* ---------- Cadastro de Usuários ---------- */
   .pin-mask{font-family:var(--font-mono); letter-spacing:0.15em;}
@@ -172,7 +175,7 @@
 
   /* ---------- Panels ---------- */
   .panel{background:var(--panel-2); border:1px solid var(--hairline); border-radius:var(--radius-md); padding:18px; margin-bottom:16px;}
-  .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--hairline);}
   .panel-head h2{font-size:0.92rem; font-weight:600; letter-spacing:0.01em;}
   .panel-head .count-badge{
     font-family:var(--font-mono); font-size:0.7rem; color:var(--muted);
@@ -205,12 +208,6 @@
   .op-badge.carregar{background:linear-gradient(135deg,#6a94f7,var(--blue)); color:#fff;}
   .op-badge.descarregar{background:linear-gradient(135deg,#b696ef,var(--purple)); color:#1c1030;}
 
-  .pos-badge{
-    flex-shrink:0; width:22px;height:22px;border-radius:50%;
-    background:rgba(255,255,255,0.06); border:1px solid var(--hairline-strong);
-    display:flex;align-items:center;justify-content:center;
-    font-family:var(--font-mono); font-size:0.7rem; font-weight:700; color:var(--muted);
-  }
   .overnight-badge{
     display:inline-block; font-size:0.6rem; font-weight:800; text-transform:uppercase;
     letter-spacing:0.03em; padding:2px 7px; border-radius:20px; margin-left:6px;
@@ -266,60 +263,59 @@
     0%{border-color:var(--amber);} 100%{border-color:var(--hairline);}
   }
 
-  /* ---------- Ledger rows: cartão limpo, com pares rótulo/valor bem alinhados ---------- */
+  /* ---------- Ledger rows: sem moldura, compacto — placa + nome numa linha, dados numa linha abaixo ---------- */
   .ledger-row{
-    border:1px solid var(--hairline); border-radius:12px;
-    padding:14px 15px; margin-bottom:10px;
-    background:rgba(255,255,255,0.015);
-    transition:background .15s ease, border-color .15s ease;
+    border:none; border-bottom:1px solid var(--hairline);
+    padding:13px 4px;
   }
-  .ledger-row:last-child{margin-bottom:0;}
-  .ledger-row:hover{background:rgba(255,255,255,0.03); border-color:var(--hairline-strong);}
-  .ledger-row.active-row{border-color:var(--amber-dim); background:rgba(226,171,78,0.05);}
-  .ledger-row.active-row:hover{background:rgba(226,171,78,0.08);}
+  .ledger-row:last-child{border-bottom:none; padding-bottom:2px;}
+  .ledger-row:first-child{padding-top:2px;}
 
-  .row-top{display:flex; align-items:flex-start; gap:12px;}
-  .marker-col{display:flex; flex-direction:column; align-items:center; gap:6px; flex-shrink:0; padding-top:2px;}
-  .status-dot-wrap{flex-shrink:0; width:10px; display:flex; justify-content:center;}
-  .pulse{width:8px;height:8px;border-radius:50%; background:var(--amber); box-shadow:0 0 10px 2px var(--amber-glow); animation:pulse 1.8s ease-in-out infinite;}
+  .v-line1{display:flex; align-items:center; gap:10px;}
+  .v-marker{position:relative; flex-shrink:0; display:flex; align-items:center; justify-content:center; width:20px; height:20px;}
+  .pos-num{
+    width:20px;height:20px;border-radius:50%;
+    background:rgba(226,171,78,0.16); border:1.5px solid var(--amber-dim);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono); font-weight:800; font-size:0.62rem; color:var(--amber);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  .status-dot{width:8px;height:8px;border-radius:50%; flex-shrink:0;}
+  .status-dot.pulse{background:var(--amber); box-shadow:0 0 10px 2px var(--amber-glow); animation:pulse 1.8s ease-in-out infinite;}
+  .status-dot.static-teal{background:var(--teal); box-shadow:0 0 6px 1px var(--teal-glow);}
   @keyframes pulse{0%,100%{opacity:1;} 50%{opacity:0.4;}}
-  .row-head{flex:1; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:8px; padding-top:2px;}
-  .row-name-main{font-size:0.94rem; font-weight:700; color:var(--text);}
+  .v-name{font-size:1.05rem; font-weight:800; color:var(--text); flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .v-actions{display:flex; gap:6px; flex-shrink:0;}
 
-  .row-detail-list{margin-top:14px; padding-top:12px; border-top:1px solid var(--hairline);}
-  .rd-row{
-    display:flex; align-items:baseline; justify-content:space-between; gap:12px;
-    padding:5px 0;
+  .v-line2{
+    font-size:0.74rem; color:var(--muted-dim); margin-top:8px;
+    padding-left:30px; font-family:var(--font-mono); overflow-wrap:break-word;
   }
-  .rd-label{
-    font-size:0.68rem; text-transform:uppercase; letter-spacing:0.06em;
-    color:var(--muted-dim); font-weight:700; flex-shrink:0;
-  }
-  .rd-value{
-    font-size:0.85rem; color:var(--text); font-family:var(--font-mono);
-    text-align:right; overflow-wrap:break-word;
-  }
-  .rd-value .tempo{color:var(--amber); font-weight:700;}
-  .rd-value .total{color:var(--teal); font-weight:700;}
+  .v-line2 .tempo{color:var(--amber); font-weight:700;}
+  .v-line2 .total{color:var(--teal); font-weight:700;}
 
+  .v-user{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-size:0.65rem; color:var(--muted-dim); margin-top:4px; padding-left:30px; font-family:var(--font-mono);
+  }
   .row-obs{
-    font-size:0.75rem; color:var(--muted-dim); margin-top:10px;
-    padding-top:10px; border-top:1px dashed var(--hairline); font-family:var(--font-body);
+    font-size:0.72rem; color:var(--muted-dim); margin-top:6px; padding-left:30px; font-family:var(--font-body);
   }
-
-  .row-actions-row{display:flex; justify-content:flex-end; gap:8px; margin-top:14px;}
   .produto-tag{
     display:inline-block; font-size:0.65rem; color:var(--muted); background:rgba(255,255,255,0.05);
     border:1px solid var(--hairline); padding:2px 8px; border-radius:20px; font-family:var(--font-body);
     margin-left:6px; vertical-align:1px;
   }
+  .ledger-row.descarga-row{
+    background:rgba(160,116,232,0.06);
+  }
+  .menu-btn{font-size:1rem; font-weight:800; line-height:1;}
+  .row-actions-sheet{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+  .row-actions-sheet .btn{width:100%; text-align:center;}
 
   /* ---------- Placa (visual realista) ---------- */
-  .plate-col{display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0;}
-  .plate-user{
-    font-family:var(--font-mono); font-size:0.6rem; color:var(--muted-dim);
-    max-width:98px; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  }
+  .plate-sm-wrap{width:76px; height:27px; flex-shrink:0; position:relative;}
+  .plate-sm-wrap .plate{transform:scale(0.78); transform-origin:top left; position:absolute; top:0; left:0;}
   .plate{
     flex-shrink:0; width:98px; border-radius:5px; overflow:hidden;
     border:2px solid #17181a; box-shadow:0 2px 5px rgba(0,0,0,0.45);
@@ -479,6 +475,7 @@
         <span id="clockTime">--:--:--</span>
         <span class="date" id="clockDate">--/--/----</span>
       </div>
+      <div class="conn-indicator" id="connIndicator">💾 Local</div>
       <button class="logout-btn" onclick="sairPortaria()">Sair</button>
     </div>
   </div>
@@ -554,15 +551,14 @@
 
     <div class="panel" id="historicoPanel">
       <div class="panel-head"><h2>Histórico</h2></div>
-      <div class="hint-muted" style="margin-bottom:12px;">Preencha um filtro abaixo e clique em Consultar — os veículos que saíram hoje já aparecem na seção acima.</div>
       <div class="filters">
         <div class="field">
           <label for="fData">Data</label>
           <input type="date" id="fData">
         </div>
         <div class="field">
-          <label for="fBusca">Buscar (ignora data)</label>
-          <input id="fBusca" placeholder="Placa ou motorista..." onkeydown="if(event.key==='Enter') consultarHistorico()">
+          <label for="fBusca">Placa</label>
+          <input id="fBusca" list="placasList" placeholder="ABC1234 ou ABC1D23" onkeydown="if(event.key==='Enter') consultarHistorico()">
         </div>
       </div>
       <div class="actions-row" style="margin-top:0; margin-bottom:14px;">
@@ -684,6 +680,38 @@
   </div>
 </div>
 
+<!-- Modal: subjanela de ações do lançamento (aberta ao clicar na linha do veículo) -->
+<div class="overlay" id="rowActionsOverlay">
+  <div class="modal">
+    <h3>O que deseja fazer?</h3>
+    <p id="rowActionsTexto"></p>
+    <div class="row-actions-sheet">
+      <button class="btn btn-outline" onclick="acaoEditar()">✏️ Editar</button>
+      <button class="btn btn-outline" id="btnAcaoPernoite" onclick="acaoPernoite()">🌙 Pernoite</button>
+      <button class="btn btn-danger" onclick="acaoExcluir()">🗑️ Excluir</button>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-outline" onclick="fecharModal('rowActionsOverlay')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar pernoite -->
+<div class="overlay" id="confirmPernoiteOverlay">
+  <div class="modal">
+    <h3>Confirmar pernoite</h3>
+    <p id="confirmPernoiteTexto"></p>
+    <div class="field">
+      <label for="pernoiteJustInput">Justificativa</label>
+      <input id="pernoiteJustInput" placeholder="Motivo do veículo permanecer no pátio...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('confirmPernoiteOverlay')">Cancelar</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="confirmarPernoite()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: confirmar exclusão -->
 <div class="overlay" id="confirmExcluirOverlay">
   <div class="modal">
@@ -747,6 +775,90 @@
 </div>
 
 <script>
+// =====================================================================
+// FIREBASE (opcional): preencha com as credenciais do SEU projeto para
+// habilitar sincronização em nuvem entre dispositivos. Enquanto os
+// valores abaixo estiverem como estão, o app funciona 100% offline,
+// salvando tudo só no navegador (localStorage), como já funcionava.
+//
+// Como configurar:
+// 1. Crie um projeto em https://console.firebase.google.com
+// 2. Ative o "Firestore Database" (modo produção ou teste)
+// 3. Em "Configurações do projeto" > "Seus apps" > Web, copie o objeto
+//    de configuração e cole substituindo o objeto abaixo
+// 4. Nas regras do Firestore, libere leitura/escrita na coleção
+//    "gtrackKV" (ajuste a segurança conforme sua necessidade real)
+// =====================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyB9uC9NwbEQxcuMVHew6ELvXEcNiNgFz_0",
+  authDomain: "gtrack-bcef1.firebaseapp.com",
+  projectId: "gtrack-bcef1",
+  storageBucket: "gtrack-bcef1.firebasestorage.app",
+  messagingSenderId: "1047313452342",
+  appId: "1:1047313452342:web:51f8302a500925044ff797"
+};
+const FIREBASE_CONFIGURADO = !!(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('COLE_AQUI') === -1);
+let db = null;
+let firebaseOk = false;
+
+function initFirebase(){
+  if(!FIREBASE_CONFIGURADO || typeof firebase === 'undefined'){
+    atualizarIndicadorConexao(false);
+    return;
+  }
+  try{
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.firestore();
+    firebaseOk = true;
+    atualizarIndicadorConexao(true);
+    ligarSincronizacaoFirestore();
+  }catch(e){
+    console.error('Não foi possível iniciar o Firebase — o app segue funcionando localmente.', e);
+    firebaseOk = false;
+    atualizarIndicadorConexao(false);
+  }
+}
+
+function ligarSincronizacaoFirestore(){
+  db.collection('gtrackKV').doc('records').onSnapshot(snap => {
+    if(snap.exists){
+      const dados = snap.data().items;
+      if(Array.isArray(dados)){
+        records = dados;
+        migrarRegistrosAntigos();
+        render();
+      }
+    }
+  }, e => console.error('Erro na sincronização de registros', e));
+
+  db.collection('gtrackKV').doc('users').onSnapshot(snap => {
+    if(snap.exists){
+      const dados = snap.data().items;
+      if(Array.isArray(dados)){
+        users = dados;
+        const usersScreenVisivel = !document.getElementById('usersPage').classList.contains('hidden-page');
+        if(usersScreenVisivel) renderUsuarios();
+      }
+    }
+  }, e => console.error('Erro na sincronização de usuários', e));
+
+  db.collection('gtrackKV').doc('auditLog').onSnapshot(snap => {
+    if(snap.exists){
+      const dados = snap.data().items;
+      if(Array.isArray(dados)) auditLog = dados;
+    }
+  }, e => console.error('Erro na sincronização do log', e));
+}
+
+function atualizarIndicadorConexao(conectado){
+  const el = document.getElementById('connIndicator');
+  if(!el) return;
+  el.textContent = conectado ? '☁️ Sincronizado' : '💾 Local';
+  el.title = conectado
+    ? 'Conectado ao Firebase — dados sincronizados entre dispositivos'
+    : 'Firebase não configurado — dados salvos só neste navegador';
+}
+
 const STORAGE_KEY = 'portariaRecords';
 const USERS_KEY = 'gtrackUsers';
 const SESSION_KEY = 'gtrackSession';
@@ -762,9 +874,10 @@ let pendingExcluirId = null;
 let pendingEditId = null;
 let pendingExcluirUsuarioId = null;
 let pendingEditUsuarioId = null;
+let pendingAcaoLancamentoId = null;
+let pendingPernoiteId = null;
 let operacaoSelecionada = 'Carregar';
 let lastActivityWrite = 0;
-let historicoConsultado = false;
 let loginTarget = 'app'; // para onde ir depois de digitar a senha corretamente
 
 // ---------- Navegação entre telas ----------
@@ -901,6 +1014,10 @@ function saveAuditLog(){
     if(auditLog.length > 500) auditLog = auditLog.slice(auditLog.length - 500);
     localStorage.setItem(AUDIT_KEY, JSON.stringify(auditLog));
   }catch(e){ console.error('Erro ao salvar log de auditoria', e); }
+  if(firebaseOk){
+    db.collection('gtrackKV').doc('auditLog').set({ items: auditLog, atualizadoEm: Date.now() })
+      .catch(e => console.error('Erro ao sincronizar log com o Firebase', e));
+  }
 }
 function registrarLog(tipo, detalhe){
   auditLog.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2,7), ts: Date.now(), tipo, detalhe });
@@ -924,6 +1041,10 @@ function loadUsers(){
 function saveUsers(){
   try{ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
   catch(e){ console.error('Erro ao salvar usuários', e); }
+  if(firebaseOk){
+    db.collection('gtrackKV').doc('users').set({ items: users, atualizadoEm: Date.now() })
+      .catch(e => console.error('Erro ao sincronizar usuários com o Firebase', e));
+  }
 }
 function adicionarUsuario(){
   const nomeEl = document.getElementById('userNome');
@@ -1134,13 +1255,15 @@ function renderPlate(placa){
   }
   return `<div class="plate plate-fallback">${placa}</div>`;
 }
-// Envolve a placa com o nome de quem fez o lançamento, exibido logo abaixo
-function renderPlateCol(r){
-  const usuario = r.usuarioLancamento || '-';
-  return `<div class="plate-col">${renderPlate(r.placa)}<div class="plate-user" title="Lançado por ${usuario}">${usuario}</div></div>`;
-}
 
 // ---------- Persistência ----------
+function migrarRegistrosAntigos(){
+  // Migra registros de versões antigas do app que não tinham o campo "operacao"
+  records.forEach(r => {
+    if(!r.operacao) r.operacao = r.tipo || 'Carregar';
+    if(r.operacao === 'Descarregar') r.operacao = 'Descarga';
+  });
+}
 function loadRecords(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1149,17 +1272,17 @@ function loadRecords(){
       if(Array.isArray(parsed)) records = parsed;
     }
   }catch(e){ console.error('Erro ao carregar registros (armazenamento local indisponível nesta janela)', e); }
-  // Migra registros de versões antigas do app que não tinham o campo "operacao"
-  records.forEach(r => {
-    if(!r.operacao) r.operacao = r.tipo || 'Carregar';
-    if(r.operacao === 'Descarregar') r.operacao = 'Descarga';
-  });
+  migrarRegistrosAntigos();
 }
 function saveRecords(){
   try{
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
   }catch(e){
     console.error('Erro ao salvar registros (armazenamento local indisponível nesta janela)', e);
+  }
+  if(firebaseOk){
+    db.collection('gtrackKV').doc('records').set({ items: records, atualizadoEm: Date.now() })
+      .catch(e => console.error('Erro ao sincronizar registros com o Firebase', e));
   }
 }
 
@@ -1251,6 +1374,52 @@ function confirmarExclusao(){
   render();
 }
 
+// ---------- Subjanela de ações do lançamento (aberta ao clicar na linha) ----------
+function abrirAcoesLancamento(id, isPatio){
+  pendingAcaoLancamentoId = id;
+  const rec = records.find(r => r.id === id);
+  document.getElementById('rowActionsTexto').textContent = rec ? `${rec.motorista} - placa ${placaExibicao(rec.placa)}` : '';
+  document.getElementById('btnAcaoPernoite').style.display = isPatio ? 'block' : 'none';
+  abrirModal('rowActionsOverlay');
+}
+function acaoEditar(){
+  const id = pendingAcaoLancamentoId;
+  fecharModal('rowActionsOverlay');
+  pedirEdicao(id);
+}
+function acaoExcluir(){
+  const id = pendingAcaoLancamentoId;
+  fecharModal('rowActionsOverlay');
+  pedirExclusao(id);
+}
+function acaoPernoite(){
+  const id = pendingAcaoLancamentoId;
+  fecharModal('rowActionsOverlay');
+  pedirPernoite(id);
+}
+
+// ---------- Confirmar pernoite (com justificativa) ----------
+function pedirPernoite(id){
+  const rec = records.find(r => r.id === id);
+  if(!rec) return;
+  pendingPernoiteId = id;
+  document.getElementById('confirmPernoiteTexto').textContent =
+    `Confirmar pernoite de ${rec.motorista} - placa ${placaExibicao(rec.placa)}?`;
+  document.getElementById('pernoiteJustInput').value = rec.pernoiteObs || '';
+  abrirModal('confirmPernoiteOverlay');
+}
+function confirmarPernoite(){
+  const rec = records.find(r => r.id === pendingPernoiteId);
+  if(rec){
+    rec.pernoiteObs = document.getElementById('pernoiteJustInput').value.trim();
+    rec.pernoiteConfirmado = true;
+    saveRecords();
+  }
+  pendingPernoiteId = null;
+  fecharModal('confirmPernoiteOverlay');
+  render();
+}
+
 function pedirEdicao(id){
   const rec = records.find(r => r.id === id);
   if(!rec) return;
@@ -1281,27 +1450,28 @@ function salvarEdicao(){
 function abrirModal(id){ document.getElementById(id).classList.add('show'); }
 function fecharModal(id){ document.getElementById(id).classList.remove('show'); }
 
-// Limpa os filtros do histórico e volta ao estado em branco (precisa consultar de novo)
+// Limpa os filtros do histórico e volta ao estado em branco
 function limparFiltros(){
   document.getElementById('fData').value = '';
   document.getElementById('fBusca').value = '';
-  historicoConsultado = false;
-  renderHistorico();
+  document.getElementById('historicoList').innerHTML = '<div class="empty">Preencha um filtro e clique em Consultar para visualizar o histórico.</div>';
   const painel = document.getElementById('historicoPanel');
   painel.classList.remove('flash');
   void painel.offsetWidth; // reinicia a animação mesmo se clicado em seguida
   painel.classList.add('flash');
 }
-// Aciona a exibição do histórico com os filtros preenchidos
+// Mostra o histórico filtrado na tela (a mesma lógica de filtro alimenta o relatório/PDF)
 function consultarHistorico(){
-  const data = document.getElementById('fData').value;
-  const busca = document.getElementById('fBusca').value.trim();
-  if(!data && !busca){
-    alert('Preencha uma data ou uma busca antes de consultar.');
+  renderHistorico();
+}
+function renderHistorico(){
+  const el = document.getElementById('historicoList');
+  const lista = getRelatorioFiltrado();
+  if(lista.length === 0){
+    el.innerHTML = '<div class="empty">Nenhum registro encontrado para o filtro selecionado.</div>';
     return;
   }
-  historicoConsultado = true;
-  renderHistorico();
+  el.innerHTML = lista.slice().reverse().map(renderSaidaRowHTML).join('');
 }
 
 // ---------- Renderização ----------
@@ -1309,7 +1479,6 @@ function render(){
   renderAutocomplete();
   renderPatio();
   renderSaidasHoje();
-  renderHistorico();
   renderContadores();
 }
 
@@ -1326,6 +1495,19 @@ function getVeiculosNoPatio(){
 function ehPernoite(r){
   return toLocalDateStr(r.horaEntrada) !== todayStr();
 }
+// Carregamento e Descarga têm sequências de chegada independentes uma da outra.
+// A numeração é global (baseada em todo o histórico de registros), pra que o número
+// de um veículo seja sempre o mesmo, tanto no pátio quanto depois no relatório.
+function numerarPorOperacao(){
+  const todos = [...records].sort((a,b) => a.horaEntrada - b.horaEntrada);
+  const posPorId = {};
+  let seqCarregar = 0, seqDescarga = 0;
+  todos.forEach(r => {
+    if(r.operacao === 'Descarga') posPorId[r.id] = ++seqDescarga;
+    else posPorId[r.id] = ++seqCarregar;
+  });
+  return posPorId;
+}
 function renderPatio(){
   const abertos = getVeiculosNoPatio();
   const el = document.getElementById('patioList');
@@ -1334,111 +1516,77 @@ function renderPatio(){
     el.innerHTML = '<div class="empty">Nenhum veículo no pátio no momento.</div>';
     return;
   }
-  el.innerHTML = abertos.map((r,i) => {
+  // Carregamento e Descarga têm numeração de chegada própria, cada um na sua sequência
+  const posPorId = numerarPorOperacao();
+
+  el.innerHTML = abertos.map(r => {
     const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
-    const situacaoHtml = `<span class="tempo">${formatTempoVivo(Date.now()-r.horaEntrada)}</span>${ehPernoite(r) ? ' <span class="overnight-badge" title="Entrou em um dia anterior">⚠ Pernoite</span>' : ''}`;
     const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
+    const rowClass = r.operacao === 'Descarga' ? 'ledger-row descarga-row' : 'ledger-row';
     return `
-    <div class="ledger-row active-row" data-tempo-id="${r.id}" data-entrada="${r.horaEntrada}">
-      <div class="row-top">
-        <div class="marker-col">
-          <div class="pos-badge" title="Ordem de chegada">${i+1}</div>
-          <div class="status-dot-wrap"><span class="pulse"></span></div>
-        </div>
-        ${renderPlateCol(r)}
-        <div class="row-head">
-          <div class="row-name-main">${r.motorista}</div>
+    <div class="${rowClass}" data-tempo-id="${r.id}" data-entrada="${r.horaEntrada}">
+      <div class="v-line1">
+        <div class="v-marker"><span class="pos-num" title="Ordem de chegada (${r.operacao}) · no pátio agora">${posPorId[r.id]}</span></div>
+        <div class="plate-sm-wrap">${renderPlate(r.placa)}</div>
+        <div class="v-name">${r.motorista}</div>
+        <div class="v-actions">
+          <button class="btn btn-saida btn-sm" onclick="pedirSaida('${r.id}')">Saída</button>
+          <button class="icon-btn menu-btn" title="Mais ações" onclick="abrirAcoesLancamento('${r.id}', true)">⋮</button>
         </div>
       </div>
-      <div class="row-detail-list">
-        <div class="rd-row"><span class="rd-label">Operação</span><span class="rd-value">${opHtml}</span></div>
-        <div class="rd-row"><span class="rd-label">Data</span><span class="rd-value">${formatData(r.horaEntrada)}</span></div>
-        <div class="rd-row"><span class="rd-label">Entrada</span><span class="rd-value">${formatHora(r.horaEntrada)}</span></div>
-        <div class="rd-row"><span class="rd-label">No pátio há</span><span class="rd-value">${situacaoHtml}</span></div>
-      </div>
+      <div class="v-line2">${opHtml} · entrou ${formatHora(r.horaEntrada)} · <span class="tempo">${formatTempoVivo(Date.now()-r.horaEntrada)}</span>${ehPernoite(r) ? ' <span class="overnight-badge" title="Entrou em um dia anterior">⚠ Pernoite</span>' : ''}</div>
+      <div class="v-user"><span>${formatData(r.horaEntrada)}</span><span>${r.usuarioLancamento || '-'}</span></div>
       ${obsHtml}
-      <div class="row-actions-row">
-        <button class="btn btn-saida btn-sm" onclick="pedirSaida('${r.id}')">Saída</button>
-        <button class="icon-btn" title="Editar" onclick="pedirEdicao('${r.id}')">✏️</button>
-      </div>
     </div>`;
   }).join('');
 }
 
 // Usado só pela tela (Histórico) — exige filtro preenchido, senão fica vazio de propósito
-function getHistoricoFiltrado(){
-  const busca = document.getElementById('fBusca').value.trim().toLowerCase();
+// Regra do relatório: só data → todo o histórico daquele dia; só placa → todo o histórico da placa;
+// data + placa → apenas aquela placa naquele dia; nenhum dos dois → assume o dia de hoje.
+function getRelatorioFiltrado(){
+  const placa = document.getElementById('fBusca').value.trim().toUpperCase();
   const dataFiltro = document.getElementById('fData').value;
 
-  return records
-    .filter(r => r.status === 'saida')
-    .filter(r => {
-      if(busca) return r.placa.toLowerCase().includes(busca) || r.motorista.toLowerCase().includes(busca);
-      return toLocalDateStr(r.horaEntrada) === dataFiltro;
-    })
-    .sort((a,b) => b.horaSaida - a.horaSaida);
-}
-// Usado pelo relatório/PDF — se nenhum filtro for preenchido, assume o dia de hoje (nunca fica "vazio" sem motivo)
-function getRelatorioFiltrado(){
-  const busca = document.getElementById('fBusca').value.trim().toLowerCase();
-  const dataFiltro = document.getElementById('fData').value || todayStr();
+  let lista = records.filter(r => r.status === 'saida');
 
-  return records
-    .filter(r => r.status === 'saida')
-    .filter(r => {
-      if(busca) return r.placa.toLowerCase().includes(busca) || r.motorista.toLowerCase().includes(busca);
-      return toLocalDateStr(r.horaEntrada) === dataFiltro;
-    })
-    .sort((a,b) => b.horaSaida - a.horaSaida);
+  if(dataFiltro && placa){
+    lista = lista.filter(r => toLocalDateStr(r.horaEntrada) === dataFiltro && r.placa.includes(placa));
+  } else if(placa){
+    lista = lista.filter(r => r.placa.includes(placa));
+  } else {
+    const data = dataFiltro || todayStr();
+    lista = lista.filter(r => toLocalDateStr(r.horaEntrada) === data);
+  }
+
+  return lista.sort((a,b) => a.horaEntrada - b.horaEntrada);
 }
 
 function montarObsTexto(r){
   const partes = [];
   if(r.obs) partes.push(`Entrada: ${r.obs}`);
   if(r.obsSaida) partes.push(`Saída: ${r.obsSaida}`);
+  if(r.pernoiteObs) partes.push(`Pernoite: ${r.pernoiteObs}`);
   return partes.length ? ' · ' + partes.join(' · ') : '';
 }
 function renderSaidaRowHTML(r){
   const opHtml = renderOpBadge(r.operacao) + (r.operacao === 'Descarga' && r.produto ? `<span class="produto-tag">${r.produto}</span>` : '');
-  const situacaoHtml = `${formatHora(r.horaSaida)} <span class="total">(${formatDuracao(r.horaSaida - r.horaEntrada)})</span>`;
   const obsHtml = montarObsTexto(r) ? `<div class="row-obs">${montarObsTexto(r).replace(/^ · /,'')}</div>` : '';
+  const rowClass = r.operacao === 'Descarga' ? 'ledger-row descarga-row' : 'ledger-row';
   return `
-    <div class="ledger-row">
-      <div class="row-top">
-        <div class="marker-col">
-          <div class="status-dot-wrap"><span class="dot dot-teal"></span></div>
-        </div>
-        ${renderPlateCol(r)}
-        <div class="row-head">
-          <div class="row-name-main">${r.motorista}</div>
+    <div class="${rowClass}">
+      <div class="v-line1">
+        <div class="v-marker"><span class="status-dot static-teal" title="Saiu"></span></div>
+        <div class="plate-sm-wrap">${renderPlate(r.placa)}</div>
+        <div class="v-name">${r.motorista}</div>
+        <div class="v-actions">
+          <button class="icon-btn menu-btn" title="Mais ações" onclick="abrirAcoesLancamento('${r.id}', false)">⋮</button>
         </div>
       </div>
-      <div class="row-detail-list">
-        <div class="rd-row"><span class="rd-label">Operação</span><span class="rd-value">${opHtml}</span></div>
-        <div class="rd-row"><span class="rd-label">Data</span><span class="rd-value">${formatData(r.horaEntrada)}</span></div>
-        <div class="rd-row"><span class="rd-label">Entrada</span><span class="rd-value">${formatHora(r.horaEntrada)}</span></div>
-        <div class="rd-row"><span class="rd-label">Saída</span><span class="rd-value">${situacaoHtml}</span></div>
-      </div>
+      <div class="v-line2">${opHtml} · ${formatHora(r.horaEntrada)} → ${formatHora(r.horaSaida)} · <span class="total">${formatDuracao(r.horaSaida - r.horaEntrada)}</span></div>
+      <div class="v-user"><span>${formatData(r.horaEntrada)}</span><span>${r.usuarioLancamento || '-'}</span></div>
       ${obsHtml}
-      <div class="row-actions-row">
-        <button class="icon-btn" title="Editar" onclick="pedirEdicao('${r.id}')">✏️</button>
-        <button class="icon-btn danger" title="Excluir" onclick="pedirExclusao('${r.id}')">🗑️</button>
-      </div>
     </div>`;
-}
-
-function renderHistorico(){
-  const el = document.getElementById('historicoList');
-  if(!historicoConsultado){
-    el.innerHTML = '<div class="empty">Preencha uma data ou uma busca e clique em Consultar para visualizar o histórico.</div>';
-    return;
-  }
-  const lista = getHistoricoFiltrado();
-  if(lista.length === 0){
-    el.innerHTML = '<div class="empty">Nenhum registro encontrado para o filtro selecionado.</div>';
-    return;
-  }
-  el.innerHTML = lista.map(renderSaidaRowHTML).join('');
 }
 
 function getSaidasHoje(){
@@ -1477,10 +1625,17 @@ function atualizarTempoAoVivo(){
 }
 
 // ---------- Relógio ----------
+let diaExibidoAtual = null;
 function atualizarRelogio(){
   const now = new Date();
   document.getElementById('clockTime').textContent = now.toLocaleTimeString('pt-BR');
   document.getElementById('clockDate').textContent = now.toLocaleDateString('pt-BR');
+  // Se o dia virou com o app aberto, re-renderiza pra "Veículos que Saíram" não continuar preso ao dia anterior
+  const hojeAgora = todayStr();
+  if(diaExibidoAtual !== null && diaExibidoAtual !== hojeAgora){
+    render();
+  }
+  diaExibidoAtual = hojeAgora;
 }
 
 // ---------- Relatório: pré-visualização, impressão e PDF ----------
@@ -1497,73 +1652,60 @@ function tituloRelatorio(){
 function operacaoTexto(r){
   return (r.operacao === 'Descarga' && r.produto) ? `${r.operacao} - ${r.produto}` : r.operacao;
 }
-function montarHTMLRelatorio(){
-  const noPatio = getVeiculosNoPatio();
-  const temPernoite = noPatio.some(ehPernoite);
-
-  let secaoPatio = '';
-  if(temPernoite){
-    const linhasPatio = noPatio.map((r,i) => `
-      <tr>
-        <td>${i+1}</td>
-        <td>${placaExibicao(r.placa)}</td>
-        <td>${r.motorista}</td>
-        <td>${r.operacao === 'Descarga' && r.produto ? `${r.operacao} - ${r.produto}` : r.operacao}</td>
-        <td>${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}</td>
-        <td>${formatDuracao(Date.now() - r.horaEntrada)}</td>
-        <td>${ehPernoite(r) ? '⚠ Pernoite' : '-'}</td>
-      </tr>`).join('');
-    secaoPatio = `
-      <h3 style="font-family:Arial,sans-serif;font-size:1rem;margin:16px 0 6px;">Veículos no Pátio</h3>
-      <table style="width:100%;border-collapse:collapse;font-size:0.85rem;font-family:Arial,sans-serif;margin-bottom:18px;">
-        <thead>
-          <tr style="border-bottom:2px solid #333;text-align:left;">
-            <th style="padding:6px 4px;">#</th>
-            <th style="padding:6px 4px;">Placa</th>
-            <th style="padding:6px 4px;">Motorista</th>
-            <th style="padding:6px 4px;">Operação</th>
-            <th style="padding:6px 4px;">Entrada</th>
-            <th style="padding:6px 4px;">Tempo no pátio</th>
-            <th style="padding:6px 4px;">Situação</th>
-          </tr>
-        </thead>
-        <tbody>${linhasPatio}</tbody>
-      </table>`;
-  }
-
-  const lista = montarLinhasRelatorio();
-  let linhas = lista.map(r => `
+function tabelaUnificadaHTML(titulo, lista, posPorId){
+  const semRegistro = `<h4 style="font-family:Arial,sans-serif;font-size:0.92rem;margin:10px 0 6px;color:#444;">${titulo}</h4><p style="font-family:Arial,sans-serif;font-size:0.85rem;color:#666;margin:0 0 14px;">Nenhum registro encontrado.</p>`;
+  if(lista.length === 0) return semRegistro;
+  const linhas = lista.map(r => {
+    const noPatioAgora = r.status === 'entrada';
+    const saida = noPatioAgora ? '-' : formatHora(r.horaSaida);
+    const duracao = noPatioAgora ? formatDuracao(Date.now() - r.horaEntrada) : formatDuracao(r.horaSaida - r.horaEntrada);
+    const situacao = noPatioAgora ? (ehPernoite(r) ? '⚠ No pátio (Pernoite)' : 'No pátio') : 'Saiu';
+    return `
     <tr>
+      <td>${posPorId[r.id]}</td>
       <td>${placaExibicao(r.placa)}</td>
       <td>${r.motorista}</td>
-      <td>${operacaoTexto(r)}</td>
+      <td>${r.produto || '-'}</td>
       <td>${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}</td>
-      <td>${formatHora(r.horaSaida)}</td>
-      <td>${formatDuracao(r.horaSaida - r.horaEntrada)}</td>
+      <td>${saida}</td>
+      <td>${duracao}</td>
+      <td>${situacao}</td>
       <td>${montarObsTexto(r).replace(/^ · /,'') || '-'}</td>
-    </tr>`).join('');
-  if(lista.length === 0){
-    linhas = '<tr><td colspan="7" style="text-align:center;color:#666;">Nenhum registro encontrado.</td></tr>';
-  }
+    </tr>`;
+  }).join('');
   return `
-    <h2 style="margin-bottom:4px;font-family:Arial,sans-serif;">${tituloRelatorio()}</h2>
-    <p style="color:#666;margin-top:0;font-size:0.85rem;font-family:Arial,sans-serif;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
-    ${secaoPatio}
-    <h3 style="font-family:Arial,sans-serif;font-size:1rem;margin:16px 0 6px;">Saídas registradas</h3>
-    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;font-family:Arial,sans-serif;">
+    <h4 style="font-family:Arial,sans-serif;font-size:0.92rem;margin:10px 0 6px;color:#444;">${titulo}</h4>
+    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;font-family:Arial,sans-serif;margin-bottom:16px;">
       <thead>
         <tr style="border-bottom:2px solid #333;text-align:left;">
+          <th style="padding:6px 4px;">#</th>
           <th style="padding:6px 4px;">Placa</th>
           <th style="padding:6px 4px;">Motorista</th>
-          <th style="padding:6px 4px;">Operação</th>
+          <th style="padding:6px 4px;">Produto</th>
           <th style="padding:6px 4px;">Entrada</th>
           <th style="padding:6px 4px;">Saída</th>
           <th style="padding:6px 4px;">Duração</th>
+          <th style="padding:6px 4px;">Situação</th>
           <th style="padding:6px 4px;">Obs.</th>
         </tr>
       </thead>
       <tbody>${linhas}</tbody>
-    </table>
+    </table>`;
+}
+function montarHTMLRelatorio(){
+  const posPorId = numerarPorOperacao();
+  const noPatio = getVeiculosNoPatio();
+  const saidas = montarLinhasRelatorio();
+  const todos = [...noPatio, ...saidas].sort((a,b) => a.horaEntrada - b.horaEntrada);
+
+  const carregamentos = todos.filter(r => r.operacao !== 'Descarga');
+  const descargas = todos.filter(r => r.operacao === 'Descarga');
+
+  return `
+    <h2 style="margin-bottom:4px;font-family:Arial,sans-serif;">${tituloRelatorio()}</h2>
+    <p style="color:#666;margin-top:0;font-size:0.85rem;font-family:Arial,sans-serif;">Gerado em ${new Date().toLocaleString('pt-BR')}</p>
+    ${tabelaUnificadaHTML('Carregamentos', carregamentos, posPorId)}
+    ${tabelaUnificadaHTML('Descargas', descargas, posPorId)}
   `;
 }
 function abrirPreviewRelatorio(){
@@ -1580,6 +1722,7 @@ function baixarPDF(){
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    const posPorId = numerarPorOperacao();
     const noPatio = getVeiculosNoPatio();
     const lista = montarLinhasRelatorio();
 
@@ -1591,77 +1734,56 @@ function baixarPDF(){
     doc.setTextColor(0);
 
     let y = 32;
-    const temPernoite = noPatio.some(ehPernoite);
 
-    // Seção 1: veículos no pátio (só aparece se houver algum caso de pernoite)
-    if(temPernoite){
-      doc.setFontSize(11);
+    function desenharTabela(titulo, headers, cols, linhas){
+      if(y > 260){ doc.addPage(); y = 20; }
+      doc.setFontSize(10);
       doc.setFont(undefined,'bold');
-      doc.text('Veículos no Pátio', 14, y);
+      doc.text(titulo, 14, y);
       doc.setFont(undefined,'normal');
-      y += 8;
-
-      const colsPatio = [14, 26, 62, 100, 128, 160, 182];
-      const headersPatio = ['#','Placa','Motorista','Operação','Entrada','No pátio há','Situação'];
+      y += 7;
       doc.setFontSize(9);
       doc.setFont(undefined,'bold');
-      headersPatio.forEach((h,i) => doc.text(h, colsPatio[i], y));
+      headers.forEach((h,i) => doc.text(h, cols[i], y));
       doc.setFont(undefined,'normal');
       y += 6;
       doc.line(14, y-4, 196, y-4);
-
-      noPatio.forEach((r,i) => {
-        if(y > 280){ doc.addPage(); y = 20; }
-        const linha = [
-          String(i+1),
-          placaExibicao(r.placa),
-          r.motorista.length > 13 ? r.motorista.slice(0,12)+'.' : r.motorista,
-          operacaoTexto(r).slice(0,16),
-          `${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}`,
-          formatDuracao(Date.now() - r.horaEntrada),
-          ehPernoite(r) ? 'Pernoite' : '-'
-        ];
-        linha.forEach((v,i2) => doc.text(String(v), colsPatio[i2], y));
-        y += 6;
-      });
-      y += 6;
+      if(linhas.length === 0){
+        doc.text('Nenhum registro encontrado.', 14, y);
+        y += 8;
+      } else {
+        linhas.forEach(linha => {
+          if(y > 280){ doc.addPage(); y = 20; }
+          linha.forEach((v,i) => doc.text(String(v), cols[i], y));
+          y += 6;
+        });
+        y += 4;
+      }
     }
 
-    // Seção 2: saídas registradas
-    if(y > 260){ doc.addPage(); y = 20; }
-    doc.setFontSize(11);
-    doc.setFont(undefined,'bold');
-    doc.text('Saídas registradas', 14, y);
-    doc.setFont(undefined,'normal');
-    y += 8;
+    const cols = [14, 22, 40, 64, 84, 108, 126, 148, 168];
+    const headers = ['#','Placa','Motorista','Produto','Entrada','Saída','Duração','Situação','Obs.'];
+    const montarLinha = r => {
+      const noPatioAgora = r.status === 'entrada';
+      return [
+        String(posPorId[r.id]),
+        placaExibicao(r.placa),
+        r.motorista.length > 11 ? r.motorista.slice(0,10)+'.' : r.motorista,
+        (r.produto || '-').slice(0,9),
+        `${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}`,
+        noPatioAgora ? '-' : formatHora(r.horaSaida),
+        noPatioAgora ? formatDuracao(Date.now() - r.horaEntrada) : formatDuracao(r.horaSaida - r.horaEntrada),
+        noPatioAgora ? (ehPernoite(r) ? 'Pernoite' : 'No pátio') : 'Saiu',
+        (montarObsTexto(r).replace(/^ · /,'') || '-').slice(0,12)
+      ];
+    };
 
-    const cols = [14, 44, 84, 112, 140, 162, 184];
-    const headers = ['Placa','Motorista','Operação','Entrada','Saída','Duração','Obs.'];
-    doc.setFontSize(9);
-    doc.setFont(undefined,'bold');
-    headers.forEach((h,i) => doc.text(h, cols[i], y));
-    doc.setFont(undefined,'normal');
-    y += 6;
-    doc.line(14, y-4, 196, y-4);
+    const todos = [...noPatio, ...lista].sort((a,b) => a.horaEntrada - b.horaEntrada);
+    const carregamentos = todos.filter(r => r.operacao !== 'Descarga').map(montarLinha);
+    const descargas = todos.filter(r => r.operacao === 'Descarga').map(montarLinha);
+    desenharTabela('Carregamentos', headers, cols, carregamentos);
+    desenharTabela('Descargas', headers, cols, descargas);
 
-    if(lista.length === 0){
-      doc.text('Nenhum registro encontrado.', 14, y);
-    } else {
-      lista.forEach(r => {
-        if(y > 280){ doc.addPage(); y = 20; }
-        const linha = [
-          placaExibicao(r.placa),
-          r.motorista.length > 14 ? r.motorista.slice(0,13)+'.' : r.motorista,
-          operacaoTexto(r).slice(0,16),
-          `${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}`,
-          formatHora(r.horaSaida),
-          formatDuracao(r.horaSaida - r.horaEntrada),
-          (montarObsTexto(r).replace(/^ · /,'') || '-').slice(0,16)
-        ];
-        linha.forEach((v,i) => doc.text(String(v), cols[i], y));
-        y += 6;
-      });
-    }
     const nomeArq = `relatorio-portaria-${todayStr()}.pdf`;
     doc.save(nomeArq);
   }catch(e){
@@ -1675,7 +1797,9 @@ atualizarBotoesOperacao();
 loadRecords();
 loadUsers();
 loadAuditLog();
+initFirebase();
 render();
+document.getElementById('historicoList').innerHTML = '<div class="empty">Preencha um filtro e clique em Consultar para visualizar o histórico.</div>';
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 setInterval(atualizarTempoAoVivo, 1000);
