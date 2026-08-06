@@ -702,6 +702,7 @@
     <div class="row-actions-sheet">
       <button class="btn btn-outline" onclick="acaoEditar()">✏️ Editar</button>
       <button class="btn btn-outline" id="btnAcaoPernoite" onclick="acaoPernoite()">🌙 Pernoite</button>
+      <button class="btn btn-outline" id="btnAcaoDesfazerSaida" onclick="acaoDesfazerSaida()">↩️ Desfazer Saída</button>
       <button class="btn btn-danger" onclick="acaoExcluir()">🗑️ Excluir</button>
     </div>
     <div class="modal-actions" style="margin-top:14px;">
@@ -722,6 +723,18 @@
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="fecharModal('confirmPernoiteOverlay')">Cancelar</button>
       <button class="btn btn-primary" style="width:auto;" onclick="confirmarPernoite()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar desfazer saída -->
+<div class="overlay" id="confirmDesfazerSaidaOverlay">
+  <div class="modal">
+    <h3>Desfazer saída</h3>
+    <p id="confirmDesfazerSaidaTexto"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('confirmDesfazerSaidaOverlay')">Cancelar</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="confirmarDesfazerSaida()">Confirmar</button>
     </div>
   </div>
 </div>
@@ -890,6 +903,7 @@ let pendingExcluirUsuarioId = null;
 let pendingEditUsuarioId = null;
 let pendingAcaoLancamentoId = null;
 let pendingPernoiteId = null;
+let pendingDesfazerSaidaId = null;
 let operacaoSelecionada = 'Carregar';
 let lastActivityWrite = 0;
 let loginTarget = 'app'; // para onde ir depois de digitar a senha corretamente
@@ -1393,7 +1407,9 @@ function abrirAcoesLancamento(id, isPatio){
   pendingAcaoLancamentoId = id;
   const rec = records.find(r => r.id === id);
   document.getElementById('rowActionsTexto').textContent = rec ? `${rec.motorista} - placa ${placaExibicao(rec.placa)}` : '';
-  document.getElementById('btnAcaoPernoite').style.display = isPatio ? 'block' : 'none';
+  const noPatioAgora = rec && rec.status === 'entrada';
+  document.getElementById('btnAcaoPernoite').style.display = noPatioAgora ? 'block' : 'none';
+  document.getElementById('btnAcaoDesfazerSaida').style.display = noPatioAgora ? 'none' : 'block';
   abrirModal('rowActionsOverlay');
 }
 function acaoEditar(){
@@ -1410,6 +1426,34 @@ function acaoPernoite(){
   const id = pendingAcaoLancamentoId;
   fecharModal('rowActionsOverlay');
   pedirPernoite(id);
+}
+function acaoDesfazerSaida(){
+  const id = pendingAcaoLancamentoId;
+  fecharModal('rowActionsOverlay');
+  pedirDesfazerSaida(id);
+}
+
+// ---------- Desfazer saída (corrige clique em carro errado) ----------
+function pedirDesfazerSaida(id){
+  const rec = records.find(r => r.id === id);
+  if(!rec) return;
+  pendingDesfazerSaidaId = id;
+  document.getElementById('confirmDesfazerSaidaTexto').textContent =
+    `O veículo ${rec.motorista} - placa ${placaExibicao(rec.placa)} volta para "Veículos no Pátio". Confirmar?`;
+  abrirModal('confirmDesfazerSaidaOverlay');
+}
+function confirmarDesfazerSaida(){
+  const rec = records.find(r => r.id === pendingDesfazerSaidaId);
+  if(rec){
+    rec.status = 'entrada';
+    delete rec.horaSaida;
+    delete rec.obsSaida;
+    saveRecords();
+    registrarLog('Edição', `Saída desfeita - Placa ${placaExibicao(rec.placa)} - ${rec.motorista} - por ${nomeUsuarioAtual()}`);
+  }
+  pendingDesfazerSaidaId = null;
+  fecharModal('confirmDesfazerSaidaOverlay');
+  render();
 }
 
 // ---------- Confirmar pernoite (com justificativa) ----------
@@ -1738,9 +1782,11 @@ function baixarPDF(){
   }
   try{
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: 'landscape' });
     const noPatio = getVeiculosNoPatio();
     const lista = montarLinhasRelatorio();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const rightMargin = pageWidth - 14;
 
     doc.setFontSize(14);
     doc.text(tituloRelatorio(), 14, 16);
@@ -1752,7 +1798,7 @@ function baixarPDF(){
     let y = 32;
 
     function desenharTabela(titulo, headers, cols, linhas){
-      if(y > 260){ doc.addPage(); y = 20; }
+      if(y > 175){ doc.addPage(); y = 20; }
       doc.setFontSize(10);
       doc.setFont(undefined,'bold');
       doc.text(titulo, 14, y);
@@ -1763,13 +1809,13 @@ function baixarPDF(){
       headers.forEach((h,i) => doc.text(h, cols[i], y));
       doc.setFont(undefined,'normal');
       y += 6;
-      doc.line(14, y-4, 196, y-4);
+      doc.line(14, y-4, rightMargin, y-4);
       if(linhas.length === 0){
         doc.text('Nenhum registro encontrado.', 14, y);
         y += 8;
       } else {
         linhas.forEach(linha => {
-          if(y > 280){ doc.addPage(); y = 20; }
+          if(y > 195){ doc.addPage(); y = 20; }
           linha.forEach((v,i) => doc.text(String(v), cols[i], y));
           y += 6;
         });
@@ -1777,20 +1823,21 @@ function baixarPDF(){
       }
     }
 
-    const cols = [14, 22, 40, 64, 84, 108, 126, 148, 168];
+    // Colunas espaçadas numa página em paisagem — o Motorista ganha bem mais largura
+    const cols = [14, 24, 55, 105, 130, 158, 178, 200, 225];
     const headers = ['#','Placa','Motorista','Produto','Entrada','Saída','Duração','Situação','Obs.'];
     const montarLinha = r => {
       const noPatioAgora = r.status === 'entrada';
       return [
         String(ordemDoRegistro(r)),
         placaExibicao(r.placa),
-        r.motorista.length > 11 ? r.motorista.slice(0,10)+'.' : r.motorista,
-        (r.produto || '-').slice(0,9),
+        r.motorista.length > 26 ? r.motorista.slice(0,25)+'.' : r.motorista,
+        (r.produto || '-').slice(0,14),
         `${formatData(r.horaEntrada)} ${formatHora(r.horaEntrada)}`,
         noPatioAgora ? '-' : formatHora(r.horaSaida),
         noPatioAgora ? formatDuracao(Date.now() - r.horaEntrada) : formatDuracao(r.horaSaida - r.horaEntrada),
         noPatioAgora ? (ehPernoite(r) ? 'Pernoite' : 'No pátio') : 'Saiu',
-        (montarObsTexto(r).replace(/^ · /,'') || '-').slice(0,12)
+        (montarObsTexto(r).replace(/^ · /,'') || '-').slice(0,22)
       ];
     };
 
