@@ -633,6 +633,26 @@
     </div>
 
     <div class="panel">
+      <div class="panel-head">
+        <h2>Notificações WhatsApp</h2>
+        <span class="count-badge" id="whatsappBadge">0</span>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="whatsappNome">Nome / Setor</label>
+          <input id="whatsappNome" placeholder="Ex: Gerente, Escritório...">
+        </div>
+        <div class="field">
+          <label for="whatsappNumero">Número (com DDI e DDD)</label>
+          <input id="whatsappNumero" inputmode="numeric" placeholder="Ex: 5511999999999">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="adicionarWhatsapp()">Adicionar Número</button>
+      <div class="hint-muted">O WhatsApp não permite envio automático e silencioso a partir de uma página web. Ao registrar uma entrada ou saída, o app abre uma janela com um botão pronto pra cada número — um toque abre o WhatsApp já com a mensagem escrita, só falta enviar.</div>
+      <div id="whatsappList" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="panel">
       <div class="panel-head"><h2>Log de Auditoria</h2></div>
       <div class="filters">
         <div class="field">
@@ -801,6 +821,49 @@
   </div>
 </div>
 
+<!-- Modal: editar número de WhatsApp -->
+<div class="overlay" id="editWhatsappOverlay">
+  <div class="modal">
+    <h3>Editar número</h3>
+    <div class="field">
+      <label>Nome / Setor</label>
+      <input id="editWhatsappNome">
+    </div>
+    <div class="field">
+      <label>Número (com DDI e DDD)</label>
+      <input id="editWhatsappNumero" inputmode="numeric">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('editWhatsappOverlay')">Cancelar</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="salvarEdicaoWhatsapp()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar exclusão de número de WhatsApp -->
+<div class="overlay" id="confirmExcluirWhatsappOverlay">
+  <div class="modal">
+    <h3>Excluir número</h3>
+    <p>Essa ação não pode ser desfeita. Deseja excluir este número?</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="fecharModal('confirmExcluirWhatsappOverlay')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarExclusaoWhatsapp()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: notificar via WhatsApp (um toque por contato) -->
+<div class="overlay" id="notifyWhatsappOverlay">
+  <div class="modal">
+    <h3>Notificar via WhatsApp</h3>
+    <p>Toque em um contato para abrir o WhatsApp com a mensagem pronta:</p>
+    <div class="row-actions-sheet" id="notifyWhatsappList"></div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="btn btn-outline" onclick="fecharModal('notifyWhatsappOverlay')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // =====================================================================
 // FIREBASE (opcional): preencha com as credenciais do SEU projeto para
@@ -875,6 +938,17 @@ function ligarSincronizacaoFirestore(){
       if(Array.isArray(dados)) auditLog = dados;
     }
   }, e => console.error('Erro na sincronização do log', e));
+
+  db.collection('gtrackKV').doc('whatsapp').onSnapshot(snap => {
+    if(snap.exists){
+      const dados = snap.data().items;
+      if(Array.isArray(dados)){
+        whatsappNumeros = dados;
+        const usersScreenVisivel = !document.getElementById('usersPage').classList.contains('hidden-page');
+        if(usersScreenVisivel) renderWhatsapp();
+      }
+    }
+  }, e => console.error('Erro na sincronização dos números de WhatsApp', e));
 }
 
 function atualizarIndicadorConexao(conectado){
@@ -890,17 +964,21 @@ const STORAGE_KEY = 'portariaRecords';
 const USERS_KEY = 'gtrackUsers';
 const SESSION_KEY = 'gtrackSession';
 const AUDIT_KEY = 'gtrackAuditLog';
+const WHATSAPP_KEY = 'gtrackWhatsapp';
 const MASTER_PIN = '2026';
 const TIMEOUT_MS = 10 * 60 * 1000; // 10 minutos de inatividade
 
 let records = [];
 let users = [];
 let auditLog = [];
+let whatsappNumeros = [];
 let pendingSaidaId = null;
 let pendingExcluirId = null;
 let pendingEditId = null;
 let pendingExcluirUsuarioId = null;
 let pendingEditUsuarioId = null;
+let pendingExcluirWhatsappId = null;
+let pendingEditWhatsappId = null;
 let pendingAcaoLancamentoId = null;
 let pendingPernoiteId = null;
 let pendingDesfazerSaidaId = null;
@@ -914,7 +992,7 @@ function showView(view){
   document.getElementById('loginScreen').classList.toggle('hide', view !== 'login');
   document.getElementById('appPage').classList.toggle('hidden-page', view !== 'app');
   document.getElementById('usersPage').classList.toggle('hidden-page', view !== 'users');
-  if(view === 'users'){ renderUsuarios(); renderLog(); }
+  if(view === 'users'){ renderUsuarios(); renderWhatsapp(); renderLog(); }
   if(view === 'login'){
     document.getElementById('loginPin').value = '';
     document.getElementById('loginError').textContent = '';
@@ -1143,6 +1221,114 @@ function renderUsuarios(){
   `).join('');
 }
 
+// ---------- Notificações WhatsApp ----------
+function loadWhatsapp(){
+  try{
+    const raw = localStorage.getItem(WHATSAPP_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) whatsappNumeros = parsed;
+    }
+  }catch(e){ console.error('Erro ao carregar números de WhatsApp', e); }
+}
+function saveWhatsapp(){
+  try{ localStorage.setItem(WHATSAPP_KEY, JSON.stringify(whatsappNumeros)); }
+  catch(e){ console.error('Erro ao salvar números de WhatsApp', e); }
+  if(firebaseOk){
+    db.collection('gtrackKV').doc('whatsapp').set({ items: whatsappNumeros, atualizadoEm: Date.now() })
+      .catch(e => console.error('Erro ao sincronizar números de WhatsApp com o Firebase', e));
+  }
+}
+function adicionarWhatsapp(){
+  const nomeEl = document.getElementById('whatsappNome');
+  const numeroEl = document.getElementById('whatsappNumero');
+  const nome = nomeEl.value.trim();
+  const numero = numeroEl.value.replace(/\D/g,'');
+
+  if(!nome){ alert('Informe um nome ou setor pra identificar o número.'); nomeEl.focus(); return; }
+  if(numero.length < 10){ alert('Informe o número completo, com DDI e DDD (ex: 5511999999999).'); numeroEl.focus(); return; }
+
+  whatsappNumeros.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2,7), nome, numero });
+  saveWhatsapp();
+  nomeEl.value = '';
+  numeroEl.value = '';
+  renderWhatsapp();
+}
+function pedirEdicaoWhatsapp(id){
+  const w = whatsappNumeros.find(x => x.id === id);
+  if(!w) return;
+  pendingEditWhatsappId = id;
+  document.getElementById('editWhatsappNome').value = w.nome;
+  document.getElementById('editWhatsappNumero').value = w.numero;
+  abrirModal('editWhatsappOverlay');
+}
+function salvarEdicaoWhatsapp(){
+  const w = whatsappNumeros.find(x => x.id === pendingEditWhatsappId);
+  if(w){
+    const novoNome = document.getElementById('editWhatsappNome').value.trim();
+    const novoNumero = document.getElementById('editWhatsappNumero').value.replace(/\D/g,'');
+    if(novoNome) w.nome = novoNome;
+    if(novoNumero.length >= 10) w.numero = novoNumero;
+    saveWhatsapp();
+  }
+  pendingEditWhatsappId = null;
+  fecharModal('editWhatsappOverlay');
+  renderWhatsapp();
+}
+function pedirExclusaoWhatsapp(id){
+  pendingExcluirWhatsappId = id;
+  abrirModal('confirmExcluirWhatsappOverlay');
+}
+function confirmarExclusaoWhatsapp(){
+  whatsappNumeros = whatsappNumeros.filter(w => w.id !== pendingExcluirWhatsappId);
+  saveWhatsapp();
+  pendingExcluirWhatsappId = null;
+  fecharModal('confirmExcluirWhatsappOverlay');
+  renderWhatsapp();
+}
+function renderWhatsapp(){
+  const el = document.getElementById('whatsappList');
+  document.getElementById('whatsappBadge').textContent = whatsappNumeros.length;
+  if(whatsappNumeros.length === 0){
+    el.innerHTML = '<div class="empty">Nenhum número cadastrado ainda.</div>';
+    return;
+  }
+  el.innerHTML = whatsappNumeros.map(w => `
+    <div class="ledger-row simple-row">
+      <div class="status-dot-wrap"><span class="dot dot-neutral"></span></div>
+      <div class="row-info">
+        <span class="row-name" style="margin-left:0;color:var(--text);font-weight:600;font-size:0.88rem;">${w.nome}</span>
+        <div class="row-meta">+${w.numero}</div>
+      </div>
+      <div class="row-actions">
+        <button class="icon-btn" title="Editar" onclick="pedirEdicaoWhatsapp('${w.id}')">✏️</button>
+        <button class="icon-btn danger" title="Excluir" onclick="pedirExclusaoWhatsapp('${w.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// Abre a janela com um botão de envio (wa.me) pronto por número cadastrado —
+// o WhatsApp não permite disparo automático e silencioso a partir de uma página web,
+// então esse é o jeito mais próximo disso: um toque abre o WhatsApp com a mensagem escrita.
+function abrirNotificacaoWhatsapp(mensagem){
+  if(whatsappNumeros.length === 0) return;
+  const lista = document.getElementById('notifyWhatsappList');
+  lista.innerHTML = whatsappNumeros.map(w => `
+    <a class="btn btn-outline" style="display:block; text-decoration:none;" target="_blank"
+       href="https://wa.me/${w.numero}?text=${encodeURIComponent(mensagem)}">📲 ${w.nome} — ${w.numero}</a>
+  `).join('');
+  abrirModal('notifyWhatsappOverlay');
+}
+function montarMensagemEntrada(r){
+  const produtoLinha = (r.operacao === 'Descarga' && r.produto) ? `\nProduto: ${r.produto}` : '';
+  return `🚪 Entrada registrada\nPlaca: ${placaExibicao(r.placa)}\nMotorista: ${r.motorista}\nOperação: ${r.operacao}${produtoLinha}\nHorário: ${formatHora(r.horaEntrada)} - ${formatData(r.horaEntrada)}`;
+}
+function montarMensagemSaida(r){
+  const produtoLinha = (r.operacao === 'Descarga' && r.produto) ? `\nProduto: ${r.produto}` : '';
+  return `✅ Saída registrada\nPlaca: ${placaExibicao(r.placa)}\nMotorista: ${r.motorista}\nOperação: ${r.operacao}${produtoLinha}\nEntrada: ${formatHora(r.horaEntrada)}\nSaída: ${formatHora(r.horaSaida)}\nTempo no pátio: ${formatDuracao(r.horaSaida - r.horaEntrada)}`;
+}
+
 // ---------- Log de auditoria: só exibe algo se um filtro específico for aplicado ----------
 function formatLogHora(ts){
   return new Date(ts).toLocaleString('pt-BR');
@@ -1362,6 +1548,7 @@ function registrarEntrada(){
   // Mantém a operação selecionada (prático para registrar várias entradas seguidas do mesmo tipo)
 
   render();
+  if(whatsappNumeros.length > 0) abrirNotificacaoWhatsapp(montarMensagemEntrada(record));
 }
 
 function pedirSaida(id){
@@ -1386,6 +1573,7 @@ function confirmarSaida(){
   pendingSaidaId = null;
   fecharModal('confirmSaidaOverlay');
   render();
+  if(rec && whatsappNumeros.length > 0) abrirNotificacaoWhatsapp(montarMensagemSaida(rec));
 }
 
 function pedirExclusao(id){
@@ -1859,6 +2047,7 @@ function baixarPDF(){
 atualizarBotoesOperacao();
 loadRecords();
 loadUsers();
+loadWhatsapp();
 loadAuditLog();
 initFirebase();
 render();
