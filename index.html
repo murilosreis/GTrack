@@ -325,6 +325,7 @@
   }
   .menu-btn{font-size:1rem; font-weight:800; line-height:1;}
   .row-actions-sheet{display:flex; flex-direction:column; gap:8px; margin-top:6px;}
+  .wa-enviado{opacity:0.55; border-color:var(--teal) !important; color:var(--teal) !important;}
   .row-actions-sheet .btn{width:100%; text-align:center;}
 
   /* ---------- Placa (visual realista) ---------- */
@@ -1319,15 +1320,23 @@ function abrirNotificacaoWhatsapp(mensagem){
   ultimaMensagemWhatsapp = mensagem;
   const lista = document.getElementById('notifyWhatsappList');
   lista.innerHTML = whatsappNumeros.map(w => `
-    <a class="btn btn-outline" style="display:block; text-decoration:none;" target="_blank"
+    <a class="btn btn-outline wa-contato" style="display:block; text-decoration:none;" target="_blank"
+       onclick="marcarWhatsappEnviado(this)"
        href="https://wa.me/${w.numero}?text=${encodeURIComponent(mensagem)}">📲 ${w.nome} — ${w.numero}</a>
   `).join('');
   abrirModal('notifyWhatsappOverlay');
 }
+// Marca visualmente qual contato já foi tocado, pra saber onde parou ao ir abrindo um por um
+function marcarWhatsappEnviado(el){
+  el.classList.add('wa-enviado');
+  el.textContent = '✅ ' + el.textContent.replace('📲 ', '');
+}
 // Tenta abrir a conversa de TODOS os números de uma vez (funciona bem no computador;
 // no celular, o próprio sistema só deixa abrir uma conversa por toque — trava do
-// Android/iOS, não do app). Os botões individuais abaixo continuam como garantia.
+// Android/iOS, não do app). Os botões individuais abaixo continuam como garantia:
+// depois de voltar do WhatsApp, é só tocar no próximo contato da lista.
 function enviarParaTodosWhatsapp(){
+  document.querySelectorAll('#notifyWhatsappList .wa-contato').forEach(marcarWhatsappEnviado);
   whatsappNumeros.forEach(w => {
     window.open(`https://wa.me/${w.numero}?text=${encodeURIComponent(ultimaMensagemWhatsapp)}`, '_blank');
   });
