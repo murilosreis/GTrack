@@ -856,7 +856,9 @@
 <div class="overlay" id="notifyWhatsappOverlay">
   <div class="modal">
     <h3>Notificar via WhatsApp</h3>
-    <p>Toque em um contato para abrir o WhatsApp com a mensagem pronta:</p>
+    <button class="btn btn-primary" style="margin-bottom:6px;" onclick="enviarParaTodosWhatsapp()">📲 Enviar para todos</button>
+    <div class="hint-muted" style="margin-bottom:14px;">No celular, o sistema só abre uma conversa por toque — use os botões abaixo se algum número não abrir.</div>
+    <p>Ou toque em um contato específico:</p>
     <div class="row-actions-sheet" id="notifyWhatsappList"></div>
     <div class="modal-actions" style="margin-top:14px;">
       <button class="btn btn-outline" onclick="fecharModal('notifyWhatsappOverlay')">Fechar</button>
@@ -1311,14 +1313,24 @@ function renderWhatsapp(){
 // Abre a janela com um botão de envio (wa.me) pronto por número cadastrado —
 // o WhatsApp não permite disparo automático e silencioso a partir de uma página web,
 // então esse é o jeito mais próximo disso: um toque abre o WhatsApp com a mensagem escrita.
+let ultimaMensagemWhatsapp = '';
 function abrirNotificacaoWhatsapp(mensagem){
   if(whatsappNumeros.length === 0) return;
+  ultimaMensagemWhatsapp = mensagem;
   const lista = document.getElementById('notifyWhatsappList');
   lista.innerHTML = whatsappNumeros.map(w => `
     <a class="btn btn-outline" style="display:block; text-decoration:none;" target="_blank"
        href="https://wa.me/${w.numero}?text=${encodeURIComponent(mensagem)}">📲 ${w.nome} — ${w.numero}</a>
   `).join('');
   abrirModal('notifyWhatsappOverlay');
+}
+// Tenta abrir a conversa de TODOS os números de uma vez (funciona bem no computador;
+// no celular, o próprio sistema só deixa abrir uma conversa por toque — trava do
+// Android/iOS, não do app). Os botões individuais abaixo continuam como garantia.
+function enviarParaTodosWhatsapp(){
+  whatsappNumeros.forEach(w => {
+    window.open(`https://wa.me/${w.numero}?text=${encodeURIComponent(ultimaMensagemWhatsapp)}`, '_blank');
+  });
 }
 function montarMensagemEntrada(r){
   const produtoLinha = (r.operacao === 'Descarga' && r.produto) ? `\nProduto: ${r.produto}` : '';
